@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- ✅ AI 智能对话（基于 OpenRouter API）
+- ✅ AI 智能对话（基于阿里云通义千问）
 - ✅ Markdown 格式解析和渲染
 - ✅ 阿里云通义千问 TTS 语音播报
 - ✅ 透明玻璃态 UI 设计
@@ -44,18 +44,17 @@ cp .env.example .env
 编辑 `.env` 文件：
 
 ```env
-# OpenRouter API Key (获取地址: https://openrouter.ai/keys)
-VITE_OPENROUTER_API_KEY=your-openrouter-api-key-here
-
-# 阿里云 DashScope API Key (获取地址: https://help.aliyun.com/zh/model-studio/get-api-key)
+# 阿里云 DashScope API Key（用于 AI 对话和 TTS 服务）
+# 获取地址: https://help.aliyun.com/zh/model-studio/get-api-key
 VITE_DASHSCOPE_API_KEY=your-dashscope-api-key-here
 
-# TTS 代理服务器地址（可选，默认为 http://localhost:3001/api/tts）
-VITE_TTS_PROXY_URL=http://localhost:3001/api/tts
-
-# 后端服务器端口（可选，默认为 3001）
+# 后端服务器端口（可选，默认为 3001，Docker 映射到 8089）
 PORT=3001
 ```
+
+**注意**：
+- 开发环境：前端自动连接到 `http://localhost:3001`
+- Docker 环境：前端自动连接到 `http://localhost:8089`
 
 ### 3. 启动开发服务器
 
@@ -165,15 +164,17 @@ digitalhuman/
 
 ## API 配置
 
-### OpenRouter API
+### 阿里云通义千问 API
 
 支持多种 AI 模型：
-- `anthropic/claude-sonnet-4` (默认)
-- `openai/gpt-4o`
-- `google/gemini-2.5-flash`
-- 等等...
+- `qwen-plus` (默认，推荐)
+- `qwen-turbo` (更快速)
+- `qwen-max` (最强大)
+- `qwen-long` (长文本)
 
 在 `src/services/ai.js` 中可以修改模型配置。
+
+模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
 
 ### 阿里云 TTS API
 

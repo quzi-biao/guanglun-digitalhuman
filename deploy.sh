@@ -27,12 +27,8 @@ source .env
 if [ -z "$VITE_DASHSCOPE_API_KEY" ] || [ "$VITE_DASHSCOPE_API_KEY" = "your-dashscope-api-key-here" ]; then
     echo -e "${RED}错误: VITE_DASHSCOPE_API_KEY 未配置${NC}"
     echo "请在 .env 文件中配置阿里云 DashScope API Key"
+    echo "该 Key 用于 AI 对话和 TTS 语音合成功能"
     exit 1
-fi
-
-if [ -z "$VITE_OPENROUTER_API_KEY" ] || [ "$VITE_OPENROUTER_API_KEY" = "your-openrouter-api-key-here" ]; then
-    echo -e "${YELLOW}警告: VITE_OPENROUTER_API_KEY 未配置${NC}"
-    echo "AI 对话功能将无法使用"
 fi
 
 # 停止并删除旧容器

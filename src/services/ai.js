@@ -1,15 +1,11 @@
 /**
  * AI 对话服务
- * 基于 OpenRouter API
+ * 通过后端代理调用阿里云 DashScope API
  */
 
-// 配置信息 - 请替换为实际的 API Key 和配置
+// 配置信息
 const API_CONFIG = {
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY || 'your-api-key-here',
-  baseUrl: 'https://openrouter.ai/api/v1/chat/completions',
-  model: 'anthropic/claude-sonnet-4', // 可选其他模型
-  siteUrl: 'https://digitalhuman.com',
-  siteName: '数智人对话'
+  proxyUrl: import.meta.env.VITE_AI_PROXY_URL || 'http://localhost:3001/api/chat',
 }
 
 // 默认系统提示词
@@ -63,18 +59,15 @@ export async function sendChatMessage(messages, temperature = 0.7) {
       ...messages.map(({ role, content }) => ({ role, content }))
     ]
 
-    const response = await fetch(API_CONFIG.baseUrl, {
+    const response = await fetch(API_CONFIG.proxyUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_CONFIG.apiKey}`,
-        'HTTP-Referer': API_CONFIG.siteUrl,
-        'X-Title': encodeURIComponent(API_CONFIG.siteName),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: API_CONFIG.model,
         messages: messagesWithSystem,
         temperature,
+        stream: false,
       }),
     })
 
@@ -106,16 +99,12 @@ export async function sendStreamingChatMessage(messages, onChunk, temperature = 
       ...messages.map(({ role, content }) => ({ role, content }))
     ]
 
-    const response = await fetch(API_CONFIG.baseUrl, {
+    const response = await fetch(API_CONFIG.proxyUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${API_CONFIG.apiKey}`,
-        'HTTP-Referer': API_CONFIG.siteUrl,
-        'X-Title': encodeURIComponent(API_CONFIG.siteName),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: API_CONFIG.model,
         messages: messagesWithSystem,
         temperature,
         stream: true,
