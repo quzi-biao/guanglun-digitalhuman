@@ -6,12 +6,15 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { createServer } from 'http'
+import { textToSpeechNLS } from './nlsTTS.js'
 
 // 加载环境变量
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const server = createServer(app)
 
 // API Key
 const API_KEY = process.env.VITE_DASHSCOPE_API_KEY
@@ -21,7 +24,7 @@ console.log('环境变量 VITE_DASHSCOPE_API_KEY:', API_KEY ? `${API_KEY.substri
 const TTS_CONFIG = {
   baseUrl: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation',
   model: 'qwen3-tts-flash',
-  voice: 'Cherry',
+  voice: 'xiaogang',
   languageType: 'Chinese'
 }
 
@@ -40,10 +43,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TTS Proxy Server is running' })
 })
 
-// TTS 代理接口
+// TTS 代理接口（使用 NLS SDK）
 app.post('/api/tts', async (req, res) => {
   try {
-    const { text, voice, languageType } = req.body
+    const { text, voice, format, sampleRate } = req.body
 
     if (!text || !text.trim()) {
       return res.status(400).json({ error: '文本内容为空' })
@@ -53,76 +56,25 @@ app.post('/api/tts', async (req, res) => {
       return res.status(500).json({ error: 'API Key 未配置' })
     }
 
-    // 调用阿里云 TTS API
-    const response = await fetch(TTS_CONFIG.baseUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        'X-DashScope-SSE': 'enable'
-      },
-      body: JSON.stringify({
-        model: TTS_CONFIG.model,
-        input: {
-          text: text.trim(),
-          voice: voice || TTS_CONFIG.voice,
-          language_type: languageType || TTS_CONFIG.languageType
-        }
-      })
+    console.log('开始 TTS 合成:', { text: text.substring(0, 50), voice: voice || 'xiaogang' })
+
+    // 使用 NLS SDK 进行语音合成
+    const audioBuffer = await textToSpeechNLS(text.trim(), {
+      voice: voice || 'xiaogang',
+      format: format || 'wav',
+      sampleRate: sampleRate || 24000
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('TTS API 错误:', errorText)
-      return res.status(response.status).json({ 
-        error: `TTS request failed: ${response.status} ${response.statusText}`,
-        details: errorText
-      })
-    }
+    // 将音频数据转换为 base64
+    const audioBase64 = audioBuffer.toString('base64')
+    const audioDataUrl = `data:audio/${format || 'wav'};base64,${audioBase64}`
 
-    // 处理 SSE 流式响应
-    const responseText = await response.text()
-    
-    // 解析 SSE 格式数据
-    let audioUrl = null
-    const lines = responseText.split('\n')
-    
-    for (const line of lines) {
-      if (line.startsWith('data:')) {
-        try {
-          const jsonStr = line.substring(5).trim()
-          if (jsonStr && jsonStr !== '[DONE]') {
-            const data = JSON.parse(jsonStr)
-            
-            // 检查是否有错误
-            if (data.code) {
-              return res.status(400).json({ 
-                error: `TTS API 返回错误: ${data.message}`,
-                code: data.code
-              })
-            }
-            
-            // 提取音频 URL
-            if (data.output?.audio?.url) {
-              audioUrl = data.output.audio.url
-              break
-            }
-          }
-        } catch (e) {
-          console.error('解析 SSE 数据失败:', e, line)
-        }
-      }
-    }
+    console.log('✓ TTS 合成完成，音频大小:', audioBuffer.length, '字节')
 
-    if (!audioUrl) {
-      console.error('未找到音频 URL，响应内容:', responseText)
-      return res.status(500).json({ error: '未获取到音频 URL' })
-    }
-
-    // 返回音频 URL
-    res.json({ audioUrl })
+    // 返回音频数据 URL
+    res.json({ audioUrl: audioDataUrl })
   } catch (error) {
-    console.error('TTS 转换错误:', error)
+    console.error('✗ TTS 转换错误:', error)
     res.status(500).json({ 
       error: 'TTS 转换失败',
       message: error.message 
@@ -223,11 +175,15 @@ app.post('/api/chat', async (req, res) => {
 })
 
 // 启动服务器
-app.listen(PORT, () => {
-  console.log(`Proxy Server running on http://localhost:${PORT}`)
-  console.log(`API Key configured: ${API_KEY ? '✓' : '✗'}`)
-  console.log(`Endpoints:`)
+server.listen(PORT, () => {
+  console.log('\n========================================')
+  console.log('🚀 后端代理服务器已启动')
+  console.log('========================================')
+  console.log(`📍 HTTP 地址: http://localhost:${PORT}`)
+  console.log(`🔑 API Key: ${API_KEY ? '✓ 已配置' : '✗ 未配置'}`)
+  console.log(`\n📡 可用接口:`)
   console.log(`  - POST /api/chat (AI 对话)`)
-  console.log(`  - POST /api/tts (TTS 语音合成)`)
+  console.log(`  - POST /api/tts (TTS 语音合成 - NLS SDK)`)
   console.log(`  - GET /health (健康检查)`)
+  console.log('========================================\n')
 })

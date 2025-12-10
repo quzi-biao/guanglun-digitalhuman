@@ -6,7 +6,7 @@
 // 配置信息
 const TTS_CONFIG = {
   proxyUrl: import.meta.env.VITE_TTS_PROXY_URL || 'http://localhost:3001/api/tts',
-  voice: 'Cherry', // 可选: Cherry, Bella, Andy, Eric, Emily, Luna, Stella, Luca, Lydia, Aria
+  voice: 'xiaogang', 
   languageType: 'Chinese'
 }
 
@@ -141,9 +141,10 @@ export function stopAudio() {
 /**
  * 播放音频（支持停止当前播放）
  * @param {string} audioUrl - 音频文件 URL
+ * @param {Function} onComplete - 播放完成回调
  * @returns {Promise<void>}
  */
-export async function playAudioWithControl(audioUrl) {
+export async function playAudioWithControl(audioUrl, onComplete) {
   // 停止当前播放
   stopAudio()
   
@@ -152,18 +153,27 @@ export async function playAudioWithControl(audioUrl) {
     
     currentAudio.onended = () => {
       currentAudio = null
+      if (onComplete) {
+        onComplete()
+      }
       resolve()
     }
     
     currentAudio.onerror = (error) => {
       console.error('音频播放错误:', error)
       currentAudio = null
+      if (onComplete) {
+        onComplete()
+      }
       reject(error)
     }
     
     currentAudio.play().catch(error => {
       console.error('音频播放失败:', error)
       currentAudio = null
+      if (onComplete) {
+        onComplete()
+      }
       reject(error)
     })
   })

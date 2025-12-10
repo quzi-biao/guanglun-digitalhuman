@@ -178,19 +178,26 @@ digitalhuman/
 
 ### 阿里云 TTS API
 
-支持多种语音：
-- Cherry (默认)
-- Bella
-- Andy
-- Eric
-- Emily
-- Luna
-- Stella
-- Luca
-- Lydia
-- Aria
+支持两种模式：
 
-在 `src/services/tts.js` 中可以修改语音配置。
+**1. 标准 TTS（HTTP API）**
+- 适合：短文本、离线合成
+- 延迟：较高（需要等待完整音频生成）
+- 使用：`src/services/tts.js`
+
+**2. 实时 TTS（WebSocket API）** ⚡ 新功能
+- 适合：长文本、实时对话
+- 延迟：极低（流式返回音频）
+- 使用：`src/services/realtimeTTS.js`
+- 支持模型：
+  - `qwen3-tts-flash-realtime` - 快速模型（推荐）
+  - `qwen-tts-realtime` - 标准模型
+  - `qwen3-tts-vc-realtime` - 声音复刻模型
+
+支持的语音：
+- xiaogang (默认)
+
+在 `src/services/tts.js` 或 `src/services/realtimeTTS.js` 中可以修改语音配置。
 
 ## 使用说明
 

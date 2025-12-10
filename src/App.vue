@@ -139,12 +139,16 @@ const sendMessage = async () => {
     // AI 对话完成，结束加载状态
     isLoading.value = false
     
-    // 调用 TTS 播报（异步，不阻塞）
+    // 使用 TTS 播报（异步，不阻塞）
     try {
-      const audioUrl = await textToSpeech(response)
       isPlaying.value = true
-      await playAudioWithControl(audioUrl)
-      isPlaying.value = false
+      const audioUrl = await textToSpeech(response, {
+        voice: 'xiaoyun'
+      })
+      
+      await playAudioWithControl(audioUrl, () => {
+        isPlaying.value = false
+      })
     } catch (ttsError) {
       console.error('TTS 播报失败:', ttsError)
       isPlaying.value = false
