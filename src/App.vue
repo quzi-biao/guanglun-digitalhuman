@@ -1,10 +1,10 @@
 <template>
-  <div class="app-container">
+  <div class="app-container" @click="handleContainerClick">
     <!-- 背景图片 -->
     <div class="background"></div>
     
     <!-- 停止播放按钮 -->
-    <button v-if="isPlaying" @click="stopPlayback" class="stop-btn">
+    <button v-if="isPlaying" @click.stop="stopPlayback" class="stop-btn">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="6" y="6" width="12" height="12" rx="2"/>
       </svg>
@@ -36,8 +36,8 @@
       </div>
     </div>
     
-    <!-- 右侧操作栏 -->
-    <div class="side-bar">
+    <!-- 底部操作栏 -->
+    <div v-if="!showInput" class="bottom-bar" @click.stop>
       <button class="action-btn" disabled title="在问">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -63,7 +63,7 @@
     </div>
     
     <!-- 输入框 -->
-    <div v-if="showInput" class="input-container">
+    <div v-if="showInput" class="input-container" @click.stop>
       <input 
         v-model="userInput" 
         type="text" 
@@ -117,6 +117,13 @@ const stopPlayback = () => {
   isPlaying.value = false
 }
 
+// 点击容器区域，关闭输入框
+const handleContainerClick = () => {
+  if (showInput.value) {
+    showInput.value = false
+  }
+}
+
 // 发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim() || isLoading.value) return
@@ -128,6 +135,9 @@ const sendMessage = async () => {
   
   const message = userInput.value.trim()
   userInput.value = ''
+  
+  // 隐藏输入框，回到按钮选择
+  showInput.value = false
   
   // 添加用户消息
   messages.value.push({
@@ -347,42 +357,50 @@ onMounted(() => {
   }
 }
 
-.side-bar {
-  position: fixed;
-  right: 20px;
-  top: 60%;
-  transform: translateY(-50%);
+.bottom-bar {
+  position: absolute;
+  bottom: 70px;
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 2;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(15px);
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
   border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 90%;
 }
 
 .action-btn {
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   padding: 0;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn svg {
+  flex-shrink: 0;
 }
 
 .action-btn:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn:not(:disabled):active {
@@ -408,17 +426,15 @@ onMounted(() => {
 .input-container {
   position: absolute;
   bottom: 70px;
-  bottom: calc(70px + env(safe-area-inset-bottom));
-  left: 20px;
-  right: 20px;
+  border-radius: 16px;
+  left: 10px;
+  right: 10px;
   z-index: 3;
   display: flex;
   gap: 12px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(15px);
-  border-radius: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .message-input {
