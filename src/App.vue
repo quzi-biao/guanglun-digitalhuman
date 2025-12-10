@@ -39,13 +39,30 @@
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
       <button class="action-btn" disabled>
-        <span>他们在问</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>在问</span>
       </button>
-      <button class="action-btn" disabled>
-        <span>点击说话</span>
+      <button class="action-btn" :class="{ active: isPlaying }" @click="isPlaying ? stopPlayback() : null">
+        <svg v-if="!isPlaying" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+          <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+        </svg>
+        <span>{{ isPlaying ? '停止' : '说话' }}</span>
       </button>
-      <button class="action-btn keyboard-btn" @click="showInput = !showInput">
-        <span>键盘输入</span>
+      <button class="action-btn keyboard-btn" :class="{ active: showInput }" @click="showInput = !showInput">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M9 16h6"></path>
+        </svg>
+        <span>键盘</span>
       </button>
     </div>
     
@@ -195,10 +212,12 @@ onMounted(() => {
 }
 
 .chat-container {
-  position: relative;
-  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - 120px);
   padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
   overflow: hidden;
 }
 
@@ -252,20 +271,20 @@ onMounted(() => {
   max-width: 70%;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(10px);
   color: #fff;
   font-size: 15px;
   line-height: 1.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .message.user .message-content {
-  background: rgba(100, 150, 255, 0.25);
+  background: rgba(100, 150, 255, 0.35);
 }
 
 .message.assistant .message-content {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .message-content :deep(p) {
@@ -338,6 +357,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-around;
   padding: 16px 20px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
 }
@@ -355,6 +375,14 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-btn svg {
+  flex-shrink: 0;
 }
 
 .action-btn:not(:disabled):hover {
@@ -372,6 +400,12 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+.action-btn.active {
+  background: rgba(100, 150, 255, 0.4);
+  border-color: rgba(100, 150, 255, 0.6);
+  box-shadow: 0 0 20px rgba(100, 150, 255, 0.3);
+}
+
 .keyboard-btn:not(:disabled) {
   background: rgba(100, 150, 255, 0.3);
   border-color: rgba(100, 150, 255, 0.5);
@@ -379,7 +413,7 @@ onMounted(() => {
 
 .input-container {
   position: absolute;
-  bottom: 80px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
   left: 20px;
   right: 20px;
   z-index: 3;
