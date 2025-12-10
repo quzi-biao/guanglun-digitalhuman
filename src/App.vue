@@ -306,7 +306,7 @@ onMounted(() => {
 
 .current-message-wrapper {
   position: absolute;
-  top: 60%;
+  top: 55%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
@@ -389,13 +389,30 @@ onMounted(() => {
 
 .current-message-wrapper .message .message-content {
   max-width: 100%;
+  max-height: 50vh;
+  overflow-y: auto;
   text-align: left;
   font-size: 18px;
   padding: 20px 30px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.current-message-wrapper .message .message-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.current-message-wrapper .message .message-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.current-message-wrapper .message .message-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
 }
 
 .message-content {
-  max-width: 70%;
+  max-width: 85%;
   padding: 12px 16px;
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.0);
@@ -404,7 +421,7 @@ onMounted(() => {
   font-size: 15px;
   line-height: 1.6;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .message.user .message-content {
