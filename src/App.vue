@@ -3,25 +3,42 @@
     <!-- 背景图片 -->
     <div class="background"></div>
     
-    <!-- 停止播放按钮 -->
-    <button v-if="isPlaying" @click.stop="stopPlayback" class="stop-btn">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="6" y="6" width="12" height="12" rx="2"/>
+    <!-- 右上角历史按钮 -->
+    <button @click.stop="showHistory = !showHistory" class="history-btn" :title="showHistory ? '关闭历史' : '查看历史'">
+      <svg v-if="!showHistory" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 3h18v18H3z"></path>
+        <path d="M9 9h6M9 12h6M9 15h6"></path>
       </svg>
-      <span>停止播放</span>
+      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
     </button>
     
     <!-- 对话区域 -->
     <div class="chat-container">
-      <div class="messages-wrapper" ref="messagesWrapper">
-        <div 
-          v-for="(msg, index) in messages" 
-          :key="index" 
-          :class="['message', msg.role]"
-        >
+      <!-- 历史消息列表 -->
+      <div v-if="showHistory" class="history-panel" @click.stop>
+        <div class="history-wrapper">
+          <div 
+            v-for="(msg, index) in messages" 
+            :key="index" 
+            :class="['message', msg.role]"
+          >
+            <div class="message-content">
+              <div v-if="msg.role === 'assistant'" v-html="parseMarkdown(msg.content)"></div>
+              <div v-else>{{ msg.content }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 当前消息（居中显示） -->
+      <div v-else class="current-message-wrapper">
+        <div v-if="latestMessage" :class="['message', latestMessage.role]">
           <div class="message-content">
-            <div v-if="msg.role === 'assistant'" v-html="parseMarkdown(msg.content)"></div>
-            <div v-else>{{ msg.content }}</div>
+            <div v-if="latestMessage.role === 'assistant'" v-html="parseMarkdown(latestMessage.content)"></div>
+            <div v-else>{{ latestMessage.content }}</div>
           </div>
         </div>
         
@@ -79,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { marked } from 'marked'
 import { sendChatMessage } from './services/ai'
 import { textToSpeech, playAudioWithControl, stopAudio } from './services/tts'
@@ -90,6 +107,12 @@ const isLoading = ref(false)
 const showInput = ref(false)
 const messagesWrapper = ref(null)
 const isPlaying = ref(false)
+const showHistory = ref(false)
+
+// 计算最新消息
+const latestMessage = computed(() => {
+  return messages.value.length > 0 ? messages.value[messages.value.length - 1] : null
+})
 
 // 配置 marked
 marked.setOptions({
@@ -117,10 +140,13 @@ const stopPlayback = () => {
   isPlaying.value = false
 }
 
-// 点击容器区域，关闭输入框
+// 点击容器区域，关闭输入框和历史
 const handleContainerClick = () => {
   if (showInput.value) {
     showInput.value = false
+  }
+  if (showHistory.value) {
+    showHistory.value = false
   }
 }
 
@@ -217,22 +243,68 @@ onMounted(() => {
   z-index: 0;
 }
 
-.chat-container {
-  flex: 1;
+.history-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(15px);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
-  flex-direction: column;
-  height: calc(100vh - 120px);
-  padding: 20px;
-  padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-.messages-wrapper {
-  height: 100%;
+.history-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.chat-container {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+}
+
+.history-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  padding: 80px 20px 20px;
   overflow-y: auto;
-  padding-bottom: 20px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.history-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 100px;
+}
+
+.current-message-wrapper {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .messages-wrapper::-webkit-scrollbar {
@@ -251,7 +323,9 @@ onMounted(() => {
 .message {
   margin-bottom: 16px;
   display: flex;
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.5s ease-in;
+  width: 100%;
+  justify-content: center;
 }
 
 @keyframes fadeIn {
@@ -265,12 +339,23 @@ onMounted(() => {
   }
 }
 
-.message.user {
+.history-panel .message.user {
   justify-content: flex-end;
 }
 
-.message.assistant {
+.history-panel .message.assistant {
   justify-content: flex-start;
+}
+
+.current-message-wrapper .message {
+  justify-content: center;
+}
+
+.current-message-wrapper .message .message-content {
+  max-width: 100%;
+  text-align: center;
+  font-size: 18px;
+  padding: 20px 30px;
 }
 
 .message-content {
