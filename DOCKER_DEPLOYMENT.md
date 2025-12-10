@@ -6,8 +6,8 @@
 
 ## 架构说明
 
-- **前端服务**: Vue 3 应用，使用 Nginx 提供静态文件服务（宿主机端口 8080 → 容器端口 80）
-- **后端服务**: Node.js Express TTS 代理服务（宿主机端口 8081 → 容器端口 3001）
+- **前端服务**: Vue 3 应用，使用 Nginx 提供静态文件服务（宿主机端口 80 → 容器端口 80）
+- **后端服务**: Node.js Express TTS 代理服务（宿主机端口 8089 → 容器端口 3001）
 - **网络**: 两个服务通过 Docker 内部网络通信
 
 ## 前置要求
@@ -51,9 +51,9 @@ chmod +x deploy.sh
 
 ### 3. 访问应用
 
-- **前端**: http://localhost:8080
-- **后端 API**: http://localhost:8081
-- **后端健康检查**: http://localhost:8081/health
+- **前端**: http://localhost
+- **后端 API**: http://localhost:8089
+- **后端健康检查**: http://localhost:8089/health
 
 ## 手动部署
 
@@ -148,10 +148,10 @@ Docker Compose 配置了自动健康检查：
 
 ```bash
 # 检查后端健康
-curl http://localhost:8081/health
+curl http://localhost:8089/health
 
 # 检查前端健康
-curl http://localhost:8080/health
+curl http://localhost/health
 
 # 查看容器健康状态
 docker-compose ps
@@ -194,14 +194,14 @@ server {
 
     # 前端
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://localhost:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 
     # 后端 API
     location /api/ {
-        proxy_pass http://localhost:8081/api/;
+        proxy_pass http://localhost:8089/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
@@ -277,8 +277,8 @@ docker-compose up -d
 
 ```bash
 # 查看端口占用
-lsof -i :8080
-lsof -i :8081
+lsof -i :80
+lsof -i :8089
 
 # 修改 docker-compose.yml 中的端口映射
 ```

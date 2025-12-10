@@ -122,8 +122,8 @@ docker-compose down
 ```
 
 访问：
-- 前端：http://localhost:8080
-- 后端 API：http://localhost:8081
+- 前端：http://localhost
+- 后端 API：http://localhost:8089
 
 详细文档请查看 [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
 
