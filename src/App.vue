@@ -35,7 +35,13 @@
       
       <!-- 当前消息（居中显示） -->
       <div v-else class="current-message-wrapper">
-        <div v-if="latestMessage" :class="['message', latestMessage.role]">
+        <div v-if="latestMessage && !hideCurrentMessage" :class="['message', latestMessage.role]">
+          <button @click.stop="hideCurrentMessage = true" class="close-message-btn" title="关闭消息">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
           <div class="message-content">
             <div v-if="latestMessage.role === 'assistant'" v-html="parseMarkdown(latestMessage.content)"></div>
             <div v-else>{{ latestMessage.content }}</div>
@@ -108,6 +114,7 @@ const showInput = ref(false)
 const messagesWrapper = ref(null)
 const isPlaying = ref(false)
 const showHistory = ref(false)
+const hideCurrentMessage = ref(false)
 
 // 计算最新消息
 const latestMessage = computed(() => {
@@ -164,6 +171,9 @@ const sendMessage = async () => {
   
   // 隐藏输入框，回到按钮选择
   showInput.value = false
+  
+  // 显示新消息（重置隐藏状态）
+  hideCurrentMessage.value = false
   
   // 添加用户消息
   messages.value.push({
@@ -348,12 +358,38 @@ onMounted(() => {
 }
 
 .current-message-wrapper .message {
+  justify-content: flex-start;
+  position: relative;
+}
+
+.close-message-btn {
+  position: absolute;
+  top: -40px;
+  right: 0px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  z-index: 10;
+  opacity: 0.7;
+}
+
+.close-message-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 .current-message-wrapper .message .message-content {
   max-width: 100%;
-  text-align: center;
+  text-align: left;
   font-size: 18px;
   padding: 20px 30px;
 }
