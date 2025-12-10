@@ -117,17 +117,20 @@
           {{ micPermissionError }}
         </div>
         <div class="voice-hint" v-else>
-          {{ isRecording ? '正在识别...' : '按住按钮开始说话' }}
+          {{ isRecording ? '正在识别...' : '长按按钮开始说话' }}
         </div>
-        <button 
-          class="voice-record-btn" 
-          :class="{ recording: isRecording }"
-          @touchstart.prevent="handleTouchStart"
-          @touchend.prevent="handleTouchEnd"
-          @touchcancel.prevent="handleTouchEnd"
-          @mousedown.prevent="handleTouchStart"
-          @mouseup.prevent="handleTouchEnd"
+        <div 
+          class="voice-record-wrapper"
+          @touchstart.prevent="startRecording"
+          @touchend.prevent="stopRecording"
+          @touchcancel.prevent="stopRecording"
+          @mousedown.prevent="startRecording"
+          @mouseup.prevent="stopRecording"
         >
+          <button 
+            class="voice-record-btn" 
+            :class="{ recording: isRecording }"
+          >
           <svg v-if="!isRecording" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -141,7 +144,8 @@
               <rect x="14" y="4" width="4" height="16" rx="1"></rect>
             </svg>
           </div>
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -166,6 +170,7 @@ const isRecording = ref(false)
 const recognizedText = ref('')
 const showVoiceInput = ref(false)
 const micPermissionError = ref('')
+const shouldSendAfterComplete = ref(false)
 
 // 计算最新消息
 const latestMessage = computed(() => {
@@ -226,94 +231,99 @@ const toggleVoiceInput = () => {
   }
 }
 
-// 触摸开始 - 开始录音
-const handleTouchStart = async (e) => {
+// 开始录音
+const startRecording = (e) => {
+  console.log('开始录音', e.type)
   if (isRecording.value || isLoading.value) return
+  
+  // 立即设置录音状态
+  isRecording.value = true
   
   // 清除之前的错误信息
   micPermissionError.value = ''
+  recognizedText.value = ''
   
-  try {
-    // 检查浏览器是否支持
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      micPermissionError.value = '您的浏览器不支持麦克风功能'
-      return
-    }
-    
-    isRecording.value = true
-    recognizedText.value = ''
-    
-    await startVoiceRecognition({
-      onResult: (text, isFinal) => {
-        recognizedText.value = text
-        console.log('识别结果:', text, '是否最终:', isFinal)
-      },
-      onError: (error) => {
-        console.error('语音识别错误:', error)
+  // 使用 setTimeout 让异步操作不阻塞事件处理
+  setTimeout(async () => {
+    try {
+      // 检查浏览器是否支持
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        micPermissionError.value = '您的浏览器不支持麦克风功能'
         isRecording.value = false
-        
-        // 处理不同类型的错误
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          micPermissionError.value = '麦克风权限被拒绝，请在设置中允许访问麦克风'
-        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-          micPermissionError.value = '未找到麦克风设备'
-        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-          micPermissionError.value = '麦克风被其他应用占用'
-        } else if (error.message) {
-          micPermissionError.value = `错误: ${error.message}`
-        } else {
-          micPermissionError.value = '启动麦克风失败，请重试'
-        }
-      },
-      onCompleted: () => {
-        console.log('识别完成')
+        return
       }
-    })
-  } catch (error) {
-    console.error('启动录音失败:', error)
-    isRecording.value = false
-    
-    // 处理权限错误
-    if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-      micPermissionError.value = '麦克风权限被拒绝，请在设置中允许访问麦克风'
-    } else if (error.name === 'NotFoundError') {
-      micPermissionError.value = '未找到麦克风设备'
-    } else if (error.name === 'NotReadableError') {
-      micPermissionError.value = '麦克风被其他应用占用'
-    } else {
-      micPermissionError.value = '启动录音失败: ' + (error.message || '未知错误')
+      
+      await startVoiceRecognition({
+        onResult: (text, isFinal) => {
+          recognizedText.value = text
+          console.log('识别结果:', text, '是否最终:', isFinal)
+        },
+        onError: (error) => {
+          console.error('语音识别错误:', error)
+          isRecording.value = false
+          shouldSendAfterComplete.value = false
+          
+          // 处理不同类型的错误
+          if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+            micPermissionError.value = '麦克风权限被拒绝，请在设置中允许访问麦克风'
+          } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+            micPermissionError.value = '未找到麦克风设备'
+          } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+            micPermissionError.value = '麦克风被其他应用占用'
+          } else if (error.message) {
+            micPermissionError.value = `错误: ${error.message}`
+          } else {
+            micPermissionError.value = '启动麦克风失败，请重试'
+          }
+        },
+        onCompleted: async () => {
+          console.log('识别完成，当前文本:', recognizedText.value)
+          
+          // 如果需要发送消息
+          if (shouldSendAfterComplete.value && recognizedText.value.trim()) {
+            console.log('准备发送消息:', recognizedText.value)
+            userInput.value = recognizedText.value
+            showVoiceInput.value = false
+            shouldSendAfterComplete.value = false
+            await sendMessage()
+          }
+        }
+      })
+    } catch (error) {
+      console.error('启动录音失败:', error)
+      isRecording.value = false
+      
+      // 处理权限错误
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        micPermissionError.value = '麦克风权限被拒绝，请在设置中允许访问麦克风'
+      } else if (error.name === 'NotFoundError') {
+        micPermissionError.value = '未找到麦克风设备'
+      } else if (error.name === 'NotReadableError') {
+        micPermissionError.value = '麦克风被其他应用占用'
+      } else {
+        micPermissionError.value = '启动录音失败: ' + (error.message || '未知错误')
+      }
     }
-  }
+  }, 0)
 }
 
-// 触摸结束 - 停止录音并发送
-const handleTouchEnd = async (e) => {
-  console.log('isRecording.value', isRecording.value)
-  if (!isRecording.value) return
+// 停止录音并发送
+const stopRecording = (e) => {
+  console.log('停止录音', e?.type, 'isRecording:', isRecording.value)
+  if (!isRecording.value) {
+    console.log('录音未开始，忽略停止事件')
+    return
+  }
   
-  console.log('触摸结束，停止录音')
+  // 标记需要在识别完成后发送
+  shouldSendAfterComplete.value = true
+  
+  // 停止录音
   isRecording.value = false
   stopVoiceRecognition()
   
-  // 等待一小段时间确保最终识别结果返回
-  await new Promise(resolve => setTimeout(resolve, 500))
-  
-  console.log('当前识别文本:', recognizedText.value)
-  
-  // 如果有识别结果，自动发送
-  if (recognizedText.value.trim()) {
-    console.log('准备发送消息:', recognizedText.value)
-    userInput.value = recognizedText.value
-    showVoiceInput.value = false
-    await sendMessage()
-  } else {
-    console.log('没有识别到文本，不发送')
-  }
+  console.log('等待识别完成...')
 }
-
-// 兼容旧的函数名（如果其他地方有调用）
-const startRecording = handleTouchStart
-const stopRecording = handleTouchEnd
 
 // 发送消息
 const sendMessage = async () => {
@@ -396,6 +406,9 @@ onMounted(() => {
   height: 100vh;
   position: relative;
   overflow: hidden;
+  touch-action: pan-y;
+  /* 桌面浏览器也支持滚动 */
+  overscroll-behavior: contain;
 }
 
 .background {
@@ -472,6 +485,8 @@ onMounted(() => {
   backdrop-filter: blur(20px);
   padding: 80px 20px 20px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .history-wrapper {
@@ -572,6 +587,8 @@ onMounted(() => {
   padding: 20px 30px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .current-message-wrapper .message .message-content::-webkit-scrollbar {
@@ -906,6 +923,15 @@ onMounted(() => {
   line-height: 1.5;
 }
 
+.voice-record-wrapper {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .voice-record-btn {
   width: 80px;
   height: 80px;
@@ -919,6 +945,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
+  pointer-events: none;
   box-shadow: 0 4px 16px rgba(100, 150, 255, 0.2);
 }
 
