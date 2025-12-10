@@ -12,6 +12,8 @@ RUN npm ci --only=production
 
 # 复制后端服务器文件
 COPY server.js ./
+COPY nlsTTS.js ./
+COPY nlsToken.js ./
 COPY .env* ./
 
 # 暴露端口
