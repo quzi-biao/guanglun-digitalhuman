@@ -36,33 +36,29 @@
       </div>
     </div>
     
-    <!-- 底部操作栏 -->
-    <div class="bottom-bar">
-      <button class="action-btn" disabled>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- 右侧操作栏 -->
+    <div class="side-bar">
+      <button class="action-btn" disabled title="在问">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
-        <span>在问</span>
       </button>
-      <button class="action-btn" :class="{ active: isPlaying }" @click="isPlaying ? stopPlayback() : null">
-        <svg v-if="!isPlaying" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-          <line x1="8" y1="23" x2="16" y2="23"></line>
+      <button class="action-btn" :class="{ active: isPlaying }" @click="isPlaying ? stopPlayback() : null" :title="isPlaying ? '停止播放' : '语音播报'">
+        <svg v-if="!isPlaying" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
         </svg>
-        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
           <rect x="6" y="4" width="4" height="16" rx="1"></rect>
           <rect x="14" y="4" width="4" height="16" rx="1"></rect>
         </svg>
-        <span>{{ isPlaying ? '停止' : '说话' }}</span>
       </button>
-      <button class="action-btn keyboard-btn" :class="{ active: showInput }" @click="showInput = !showInput">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="action-btn keyboard-btn" :class="{ active: showInput }" @click="showInput = !showInput" title="键盘输入">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="2" y="4" width="20" height="16" rx="2"></rect>
           <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M9 16h6"></path>
         </svg>
-        <span>键盘</span>
       </button>
     </div>
     
@@ -271,20 +267,23 @@ onMounted(() => {
   max-width: 70%;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.0);
   backdrop-filter: blur(10px);
   color: #fff;
   font-size: 15px;
   line-height: 1.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .message.user .message-content {
-  background: rgba(100, 150, 255, 0.35);
+  background: rgba(100, 150, 255, 0.0);
+  border-color: rgba(100, 150, 255, 0.3);
 }
 
 .message.assistant .message-content {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.0);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .message-content :deep(p) {
@@ -348,41 +347,36 @@ onMounted(() => {
   }
 }
 
-.bottom-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.side-bar {
+  position: fixed;
+  right: 20px;
+  top: 60%;
+  transform: translateY(-50%);
   z-index: 2;
   display: flex;
-  justify-content: space-around;
-  padding: 16px 20px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(15px);
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .action-btn {
-  flex: 1;
-  margin: 0 8px;
-  padding: 14px 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 25px;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  font-size: 15px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-}
-
-.action-btn svg {
-  flex-shrink: 0;
 }
 
 .action-btn:not(:disabled):hover {
@@ -413,7 +407,8 @@ onMounted(() => {
 
 .input-container {
   position: absolute;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  bottom: 70px;
+  bottom: calc(70px + env(safe-area-inset-bottom));
   left: 20px;
   right: 20px;
   z-index: 3;
