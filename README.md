@@ -91,6 +91,44 @@ npm run build
 
 构建产物将生成在 `dist` 目录。
 
+## Docker 部署（推荐）
+
+### 快速部署
+
+```bash
+# 1. 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入 API Keys
+
+# 2. 一键部署
+chmod +x deploy.sh
+./deploy.sh
+```
+
+### 手动部署
+
+```bash
+# 构建并启动所有服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+```
+
+访问：
+- 前端：http://localhost
+- 后端 API：http://localhost:3001
+
+详细文档请查看 [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
+
+## 传统部署
+
 **生产环境部署：**
 1. 部署后端服务器：`node server.js`
 2. 部署前端静态文件到 CDN 或静态服务器
@@ -112,10 +150,17 @@ digitalhuman/
 ├── server.js               # 后端 TTS 代理服务器
 ├── index.html              # HTML 模板
 ├── vite.config.js          # Vite 配置
+├── nginx.conf              # Nginx 配置
 ├── package.json            # 项目配置
+├── Dockerfile.frontend     # 前端 Docker 镜像
+├── Dockerfile.backend      # 后端 Docker 镜像
+├── docker-compose.yml      # Docker Compose 配置
+├── .dockerignore           # Docker 忽略文件
+├── deploy.sh               # 一键部署脚本
 ├── .env                    # 环境变量（需自行创建）
 ├── .env.example            # 环境变量示例
-└── README.md              # 项目说明
+├── README.md              # 项目说明
+└── DOCKER_DEPLOYMENT.md   # Docker 部署文档
 ```
 
 ## API 配置
