@@ -7,14 +7,36 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { createServer } from 'http'
+import { createServer as createHttpsServer } from 'https'
+import { readFileSync } from 'fs'
+import { WebSocketServer } from 'ws'
 import { textToSpeechNLS } from './nlsTTS.js'
+import { createSpeechTranscription, getDefaultParams } from './nlsASR.js'
 
 // 加载环境变量
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
-const server = createServer(app)
+const USE_HTTPS = process.env.USE_HTTPS === 'true'
+
+// 创建服务器（HTTP 或 HTTPS）
+let server
+if (USE_HTTPS) {
+  try {
+    const httpsOptions = {
+      key: readFileSync(process.env.SSL_KEY_PATH || './ssl/key.pem'),
+      cert: readFileSync(process.env.SSL_CERT_PATH || './ssl/cert.pem')
+    }
+    server = createHttpsServer(httpsOptions, app)
+    console.log('✓ HTTPS 服务器已启用')
+  } catch (error) {
+    console.error('✗ 加载 SSL 证书失败，回退到 HTTP:', error.message)
+    server = createServer(app)
+  }
+} else {
+  server = createServer(app)
+}
 
 // API Key
 const API_KEY = process.env.VITE_DASHSCOPE_API_KEY
@@ -174,16 +196,164 @@ app.post('/api/chat', async (req, res) => {
   }
 })
 
+// 创建 WebSocket 服务器用于实时语音识别
+const wss = new WebSocketServer({ server, path: '/ws/asr' })
+
+wss.on('connection', (ws) => {
+  console.log('🎤 新的 ASR WebSocket 连接')
+  let st = null
+  let isRecognizing = false
+  let isNlsReady = false
+  let audioQueue = []
+  let lastStartTime = 0
+  const MIN_START_INTERVAL = 2000 // 最小启动间隔 2 秒
+
+  ws.on('message', async (message) => {
+    try {
+      const data = JSON.parse(message.toString())
+
+      if (data.type === 'start') {
+        // 检查请求频率
+        const now = Date.now()
+        if (now - lastStartTime < MIN_START_INTERVAL) {
+          console.log('请求过于频繁，请稍后再试')
+          ws.send(JSON.stringify({ 
+            type: 'error', 
+            message: '请求过于频繁，请稍后再试' 
+          }))
+          return
+        }
+        lastStartTime = now
+        
+        // 开始识别
+        console.log('开始语音识别...')
+        isRecognizing = true
+        isNlsReady = false
+        audioQueue = []
+
+        try {
+          st = await createSpeechTranscription({
+            onStarted: (msg) => {
+              console.log('NLS 连接已建立，可以发送音频')
+              isNlsReady = true
+              ws.send(JSON.stringify({ type: 'started', data: msg }))
+              
+              // 发送队列中的音频数据
+              if (audioQueue.length > 0) {
+                console.log(`发送队列中的 ${audioQueue.length} 个音频包`)
+                audioQueue.forEach(buffer => {
+                  st.sendAudio(buffer)
+                })
+                audioQueue = []
+              }
+            },
+            onChanged: (msg) => {
+              // 发送中间结果
+              try {
+                const result = JSON.parse(msg)
+                if (result.payload && result.payload.result) {
+                  ws.send(JSON.stringify({ 
+                    type: 'result', 
+                    text: result.payload.result,
+                    isFinal: false 
+                  }))
+                }
+              } catch (e) {
+                console.error('解析中间结果失败:', e)
+              }
+            },
+            onCompleted: (msg) => {
+              // 发送最终结果
+              try {
+                const result = JSON.parse(msg)
+                if (result.payload && result.payload.result) {
+                  ws.send(JSON.stringify({ 
+                    type: 'result', 
+                    text: result.payload.result,
+                    isFinal: true 
+                  }))
+                }
+              } catch (e) {
+                console.error('解析最终结果失败:', e)
+              }
+              ws.send(JSON.stringify({ type: 'completed' }))
+              isRecognizing = false
+            },
+            onFailed: (msg) => {
+              ws.send(JSON.stringify({ type: 'error', message: msg }))
+              isRecognizing = false
+            },
+            onClosed: () => {
+              ws.send(JSON.stringify({ type: 'closed' }))
+              isRecognizing = false
+            }
+          })
+
+          await st.start(getDefaultParams(), true, 6000)
+        } catch (error) {
+          console.error('启动识别失败:', error)
+          ws.send(JSON.stringify({ type: 'error', message: error.message }))
+          isRecognizing = false
+        }
+      } else if (data.type === 'audio') {
+        // 发送音频数据
+        if (st && isRecognizing) {
+          const audioBuffer = Buffer.from(data.audio, 'base64')
+          
+          if (isNlsReady) {
+            // NLS 已就绪，直接发送
+            st.sendAudio(audioBuffer)
+          } else {
+            // NLS 未就绪，加入队列
+            audioQueue.push(audioBuffer)
+          }
+        }
+      } else if (data.type === 'stop') {
+        // 停止识别
+        console.log('停止语音识别...')
+        if (st && isRecognizing) {
+          try {
+            await st.close()
+          } catch (error) {
+            console.error('关闭识别失败:', error)
+          }
+          isRecognizing = false
+        }
+      }
+    } catch (error) {
+      console.error('处理消息失败:', error)
+      ws.send(JSON.stringify({ type: 'error', message: error.message }))
+    }
+  })
+
+  ws.on('close', () => {
+    console.log('🎤 ASR WebSocket 连接关闭')
+    if (st && isRecognizing) {
+      try {
+        st.shutdown()
+      } catch (error) {
+        console.error('强制关闭识别失败:', error)
+      }
+    }
+  })
+
+  ws.on('error', (error) => {
+    console.error('WebSocket 错误:', error)
+  })
+})
+
 // 启动服务器
 server.listen(PORT, () => {
   console.log('\n========================================')
   console.log('🚀 后端代理服务器已启动')
   console.log('========================================')
   console.log(`📍 HTTP 地址: http://localhost:${PORT}`)
+  console.log(`📍 WebSocket 地址: ws://localhost:${PORT}/ws/asr`)
   console.log(`🔑 API Key: ${API_KEY ? '✓ 已配置' : '✗ 未配置'}`)
   console.log(`\n📡 可用接口:`)
   console.log(`  - POST /api/chat (AI 对话)`)
   console.log(`  - POST /api/tts (TTS 语音合成 - NLS SDK)`)
+  console.log(`  - WS /ws/asr (实时语音识别)`)
   console.log(`  - GET /health (健康检查)`)
   console.log('========================================\n')
 })
