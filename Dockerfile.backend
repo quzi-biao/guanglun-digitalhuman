@@ -14,6 +14,7 @@ RUN npm ci --only=production
 COPY server.js ./
 COPY nlsTTS.js ./
 COPY nlsToken.js ./
+COPY nlsASR.js ./
 COPY .env* ./
 
 # 暴露端口
