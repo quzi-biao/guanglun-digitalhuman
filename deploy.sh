@@ -104,23 +104,64 @@ echo "=========================================="
 
 # 根据 HTTPS 配置显示访问地址
 if [ "$USE_HTTPS" = "true" ]; then
-    echo "前端访问地址: https://localhost"
-    echo "后端 API 地址: https://localhost:8089"
+    # 确定显示的主机地址
+    if [ ! -z "$SERVER_HOST" ]; then
+        DISPLAY_HOST="$SERVER_HOST"
+        echo "前端访问地址: https://${DISPLAY_HOST}"
+        echo "后端 API 地址: https://${DISPLAY_HOST}:8089"
+    else
+        DISPLAY_HOST="localhost"
+        echo "前端访问地址: https://localhost"
+        echo "后端 API 地址: https://localhost:8089"
+    fi
     echo ""
-    echo -e "${YELLOW}注意: 使用自签名证书时，浏览器会显示安全警告${NC}"
-    echo "请点击'高级' -> '继续访问'以使用应用"
-    echo ""
-    echo "手机访问: 使用本机 IP 地址"
-    echo "  1. 查看本机 IP: ifconfig | grep 'inet '"
-    echo "  2. 访问: https://YOUR_IP"
+    
+    # 检查是否使用 mkcert 生成的证书
+    if [ -f "ssl/cert.pem" ]; then
+        cert_issuer=$(openssl x509 -in ssl/cert.pem -noout -issuer 2>/dev/null || echo "")
+        if [[ $cert_issuer == *"mkcert"* ]]; then
+            echo -e "${GREEN}✓ 使用 mkcert 本地信任证书${NC}"
+            if [ -z "$SERVER_HOST" ]; then
+                echo "  本地访问不会显示警告"
+            else
+                echo -e "${YELLOW}  注意: 远程访问需要在浏览器中接受证书${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⚠ 使用自签名证书，浏览器会显示安全警告${NC}"
+            echo "  解决方法："
+            echo "  1. 点击'高级' -> '继续访问'"
+            echo "  2. 或使用 mkcert 生成受信任证书: ./generate-trusted-cert.sh"
+        fi
+    fi
+    
+    # 如果没有配置 SERVER_HOST，显示本地 IP
+    if [ -z "$SERVER_HOST" ]; then
+        echo ""
+        echo "手机访问:"
+        # 自动获取本机 IP
+        LOCAL_IP=$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+        if [ ! -z "$LOCAL_IP" ]; then
+            echo "  访问地址: https://${LOCAL_IP}"
+            echo -e "${YELLOW}  注意: 手机需要安装 mkcert CA 证书或接受证书警告${NC}"
+        else
+            echo "  1. 查看本机 IP: ifconfig | grep 'inet '"
+            echo "  2. 访问: https://YOUR_IP"
+        fi
+    fi
 else
-    echo "前端访问地址: http://localhost"
-    echo "后端 API 地址: http://localhost:8089"
+    # 确定显示的主机地址
+    if [ ! -z "$SERVER_HOST" ]; then
+        echo "前端访问地址: http://${SERVER_HOST}"
+        echo "后端 API 地址: http://${SERVER_HOST}:8089"
+    else
+        echo "前端访问地址: http://localhost"
+        echo "后端 API 地址: http://localhost:8089"
+    fi
     echo ""
-    echo -e "${YELLOW}注意: 语音输入功能需要 HTTPS${NC}"
-    echo "如需使用语音输入，请:"
-    echo "  1. 运行: ./generate-ssl-cert.sh"
-    echo "  2. 在 .env 中设置 USE_HTTPS=true"
+    echo -e "${YELLOW}⚠ 语音输入功能需要 HTTPS${NC}"
+    echo "  启用 HTTPS 步骤："
+    echo "  1. 生成证书: ./generate-trusted-cert.sh"
+    echo "  2. 配置 .env: USE_HTTPS=true"
     echo "  3. 重新部署: ./deploy.sh"
 fi
 
