@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 后端 TTS 代理服务
+  # 后端服务（支持 HTTPS）
   backend:
     build:
       context: .
@@ -13,9 +13,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - VITE_DASHSCOPE_API_KEY=${VITE_DASHSCOPE_API_KEY}
+      - USE_HTTPS=${USE_HTTPS:-false}
+      - SSL_KEY_PATH=${SSL_KEY_PATH:-./ssl/key.pem}
+      - SSL_CERT_PATH=${SSL_CERT_PATH:-./ssl/cert.pem}
     env_file:
       - .env
+    volumes:
+      - ./ssl:/app/ssl:ro
     networks:
       - digitalhuman-network
     healthcheck:
@@ -25,7 +29,7 @@ services:
       retries: 3
       start_period: 10s
 
-  # 前端服务
+  # 前端服务（支持 HTTPS）
   frontend:
     build:
       context: .
@@ -33,10 +37,15 @@ services:
       args:
         - VITE_AI_PROXY_URL=http://localhost:8089/api/chat
         - VITE_TTS_PROXY_URL=http://localhost:8089/api/tts
+        - VITE_ASR_WS_URL=ws://localhost:8089/ws/asr
+        - USE_HTTPS=${USE_HTTPS:-false}
     container_name: digitalhuman-frontend
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       backend:
         condition: service_healthy
