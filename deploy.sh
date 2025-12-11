@@ -72,19 +72,29 @@ docker-compose ps
 
 # 健康检查
 echo -e "${YELLOW}执行健康检查...${NC}"
-backend_health=$(docker-compose exec -T backend wget -q -O - http://localhost:3001/health 2>/dev/null || echo "failed")
-frontend_health=$(docker-compose exec -T frontend wget -q -O - http://localhost/health 2>/dev/null || echo "failed")
+
+# 根据 HTTPS 配置检查后端
+if [ "$USE_HTTPS" = "true" ]; then
+    backend_health=$(docker-compose exec -T backend wget --no-check-certificate -q -O - https://localhost:3001/health 2>/dev/null || echo "failed")
+else
+    backend_health=$(docker-compose exec -T backend wget -q -O - http://localhost:3001/health 2>/dev/null || echo "failed")
+fi
+
+# 前端始终检查 HTTP（Nginx 同时监听两个端口）
+frontend_health=$(docker-compose exec -T frontend curl -f http://localhost/health 2>/dev/null || echo "failed")
 
 if [[ $backend_health == *"ok"* ]]; then
     echo -e "${GREEN}✓ 后端服务健康${NC}"
 else
     echo -e "${RED}✗ 后端服务异常${NC}"
+    echo -e "${YELLOW}  提示: 检查容器日志 docker-compose logs backend${NC}"
 fi
 
 if [[ $frontend_health == *"healthy"* ]]; then
     echo -e "${GREEN}✓ 前端服务健康${NC}"
 else
     echo -e "${RED}✗ 前端服务异常${NC}"
+    echo -e "${YELLOW}  提示: 检查容器日志 docker-compose logs frontend${NC}"
 fi
 
 echo ""
