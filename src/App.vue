@@ -417,7 +417,7 @@ onMounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('./assets/WechatIMG377.jpg');
+  background-image: url('./assets/background.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -583,7 +583,7 @@ onMounted(() => {
   max-height: 50vh;
   overflow-y: auto;
   text-align: left;
-  font-size: 18px;
+  font-size: 16px;
   padding: 20px 30px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
@@ -697,7 +697,7 @@ onMounted(() => {
   z-index: 2;
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 24px;
   padding: 12px 20px;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
@@ -707,8 +707,8 @@ onMounted(() => {
 }
 
 .action-btn {
-  width: 60px;
-  height: 60px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
@@ -933,8 +933,8 @@ onMounted(() => {
 }
 
 .voice-record-btn {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   border: none;
   border-radius: 50%;
   background: rgba(100, 150, 255, 0.3);
