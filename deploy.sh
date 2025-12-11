@@ -41,13 +41,32 @@ fi
 if [ "$USE_HTTPS" = "true" ]; then
     echo -e "${YELLOW}检查 HTTPS 配置...${NC}"
     if [ ! -d "ssl" ] || [ ! -f "ssl/key.pem" ] || [ ! -f "ssl/cert.pem" ]; then
-        echo -e "${RED}错误: HTTPS 已启用但 SSL 证书不存在${NC}"
-        echo "请运行以下命令生成证书:"
-        echo "  chmod +x generate-ssl-cert.sh && ./generate-ssl-cert.sh"
-        echo "或者在 .env 中设置 USE_HTTPS=false"
-        exit 1
+        echo -e "${YELLOW}SSL 证书不存在，正在自动生成...${NC}"
+        
+        # 检查是否有 mkcert
+        if command -v mkcert &> /dev/null; then
+            echo "使用 mkcert 生成可信证书..."
+            chmod +x generate-trusted-cert.sh 2>/dev/null || true
+            ./generate-trusted-cert.sh
+        else
+            echo "使用 openssl 生成自签名证书..."
+            chmod +x generate-ssl-cert.sh 2>/dev/null || true
+            ./generate-ssl-cert.sh
+        fi
+        
+        # 再次检查证书是否生成成功
+        if [ ! -f "ssl/key.pem" ] || [ ! -f "ssl/cert.pem" ]; then
+            echo -e "${RED}错误: SSL 证书生成失败${NC}"
+            echo "请手动运行以下命令生成证书:"
+            echo "  ./generate-ssl-cert.sh"
+            echo "或者在 .env 中设置 USE_HTTPS=false"
+            exit 1
+        fi
+        
+        echo -e "${GREEN}✓ SSL 证书已生成${NC}"
+    else
+        echo -e "${GREEN}✓ SSL 证书已找到${NC}"
     fi
-    echo -e "${GREEN}✓ SSL 证书已找到${NC}"
 fi
 
 # 停止并删除旧容器

@@ -18,10 +18,23 @@ echo "生成 SSL 证书..."
 mkdir -p ssl
 
 # 获取本机 IP
-LOCAL_IP=$(ipconfig getifaddr en0 || ipconfig getifaddr en1)
+LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "")
 
-# 生成证书（包含 localhost 和本机 IP）
-mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem localhost 127.0.0.1 ::1 $LOCAL_IP
+# 生成证书（包含 localhost 和本机 IP，以及可能的服务器地址）
+if [ ! -z "$SERVER_HOST" ]; then
+    echo "包含服务器地址: $SERVER_HOST"
+    if [ ! -z "$LOCAL_IP" ]; then
+        mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem localhost 127.0.0.1 ::1 $LOCAL_IP $SERVER_HOST
+    else
+        mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem localhost 127.0.0.1 ::1 $SERVER_HOST
+    fi
+else
+    if [ ! -z "$LOCAL_IP" ]; then
+        mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem localhost 127.0.0.1 ::1 $LOCAL_IP
+    else
+        mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem localhost 127.0.0.1 ::1
+    fi
+fi
 
 echo "✓ 可信 SSL 证书已生成到 ssl/ 目录"
 echo "  - ssl/key.pem (私钥)"
