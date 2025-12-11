@@ -14,8 +14,8 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - USE_HTTPS=${USE_HTTPS:-false}
-      - SSL_KEY_PATH=${SSL_KEY_PATH:-./ssl/key.pem}
-      - SSL_CERT_PATH=${SSL_CERT_PATH:-./ssl/cert.pem}
+      - SSL_KEY_PATH=/app/ssl/key.pem
+      - SSL_CERT_PATH=/app/ssl/cert.pem
     env_file:
       - .env
     volumes:
@@ -23,7 +23,7 @@ services:
     networks:
       - digitalhuman-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "sh", "-c", "if [ \"$USE_HTTPS\" = \"true\" ]; then wget --no-check-certificate -q -O - https://localhost:3001/health || exit 1; else wget -q -O - http://localhost:3001/health || exit 1; fi"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -52,7 +52,7 @@ services:
     networks:
       - digitalhuman-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider https://localhost/health || exit 1"]
       interval: 30s
       timeout: 3s
       retries: 3
