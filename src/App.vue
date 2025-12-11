@@ -171,6 +171,8 @@ const recognizedText = ref('')
 const showVoiceInput = ref(false)
 const micPermissionError = ref('')
 const shouldSendAfterComplete = ref(false)
+const stopTimer = ref(null)
+const stopDebounceTimer = ref(null)
 
 // 计算最新消息
 const latestMessage = computed(() => {
@@ -235,6 +237,16 @@ const toggleVoiceInput = () => {
 const startRecording = (e) => {
   console.log('开始录音', e.type)
   if (isRecording.value || isLoading.value) return
+  
+  // 清除所有停止相关的定时器
+  if (stopTimer.value) {
+    clearTimeout(stopTimer.value)
+    stopTimer.value = null
+  }
+  if (stopDebounceTimer.value) {
+    clearTimeout(stopDebounceTimer.value)
+    stopDebounceTimer.value = null
+  }
   
   // 立即设置录音状态
   isRecording.value = true
@@ -307,22 +319,35 @@ const startRecording = (e) => {
   }, 0)
 }
 
-// 停止录音并发送
+// 停止录音并发送（带防抖和延迟）
 const stopRecording = (e) => {
-  console.log('停止录音', e?.type, 'isRecording:', isRecording.value)
+  console.log('停止录音触发', e?.type, 'isRecording:', isRecording.value)
   if (!isRecording.value) {
     console.log('录音未开始，忽略停止事件')
     return
   }
   
-  // 标记需要在识别完成后发送
-  shouldSendAfterComplete.value = true
+  // 清除之前的防抖定时器
+  if (stopDebounceTimer.value) {
+    clearTimeout(stopDebounceTimer.value)
+    stopDebounceTimer.value = null
+  }
   
-  // 停止录音
-  isRecording.value = false
-  stopVoiceRecognition()
-  
-  console.log('等待识别完成...')
+  // 防抖：延迟 300ms 执行停止逻辑，避免误触
+  stopDebounceTimer.value = setTimeout(() => {
+    console.log('执行延迟停止逻辑')
+    
+    // 标记需要在识别完成后发送
+    shouldSendAfterComplete.value = true
+    
+    // 延迟 1 秒后真正停止录音
+    stopTimer.value = setTimeout(() => {
+      console.log('1秒延迟后停止录音')
+      isRecording.value = false
+      stopVoiceRecognition()
+      stopTimer.value = null
+    }, 1000)
+  }, 300)
 }
 
 // 发送消息
