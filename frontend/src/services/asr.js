@@ -3,7 +3,9 @@
  * 使用 WebSocket 连接到后端 ASR 服务
  */
 
-const WS_URL = import.meta.env.VITE_ASR_WS_URL || 'ws://localhost:3001/ws/asr'
+import { config } from '../config.js'
+
+const WS_URL = config.ASR_WS_URL
 
 class ASRService {
   constructor() {

@@ -35,9 +35,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_AI_PROXY_URL=http://localhost:8089/api/chat
-        - VITE_TTS_PROXY_URL=http://localhost:8089/api/tts
-        - VITE_ASR_WS_URL=ws://localhost:8089/ws/asr
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8089}
         - USE_HTTPS=${USE_HTTPS:-false}
     container_name: digitalhuman-frontend
     restart: unless-stopped

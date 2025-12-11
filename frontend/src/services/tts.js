@@ -3,9 +3,11 @@
  * 使用通义千问 TTS API（通过后端代理）
  */
 
+import { config } from '../config.js'
+
 // 配置信息
 const TTS_CONFIG = {
-  proxyUrl: import.meta.env.VITE_TTS_PROXY_URL || 'http://localhost:3001/api/tts',
+  proxyUrl: config.TTS_PROXY_URL,
   voice: 'xiaogang', 
   languageType: 'Chinese'
 }

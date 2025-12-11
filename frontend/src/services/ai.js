@@ -3,9 +3,11 @@
  * 通过后端代理调用阿里云 DashScope API
  */
 
+import { config } from '../config.js'
+
 // 配置信息
 const API_CONFIG = {
-  proxyUrl: import.meta.env.VITE_AI_PROXY_URL || 'http://localhost:3001/api/chat',
+  proxyUrl: config.AI_PROXY_URL,
 }
 
 // 默认系统提示词
