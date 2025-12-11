@@ -43,16 +43,9 @@ if [ "$USE_HTTPS" = "true" ]; then
     if [ ! -d "ssl" ] || [ ! -f "ssl/key.pem" ] || [ ! -f "ssl/cert.pem" ]; then
         echo -e "${YELLOW}SSL 证书不存在，正在自动生成...${NC}"
         
-        # 检查是否有 mkcert
-        if command -v mkcert &> /dev/null; then
-            echo "使用 mkcert 生成可信证书..."
-            chmod +x generate-trusted-cert.sh 2>/dev/null || true
-            ./generate-trusted-cert.sh
-        else
-            echo "使用 openssl 生成自签名证书..."
-            chmod +x generate-ssl-cert.sh 2>/dev/null || true
-            ./generate-ssl-cert.sh
-        fi
+        # 使用统一的证书生成脚本（会自动安装 mkcert）
+        chmod +x generate-ssl-cert.sh 2>/dev/null || true
+        ./generate-ssl-cert.sh
         
         # 再次检查证书是否生成成功
         if [ ! -f "ssl/key.pem" ] || [ ! -f "ssl/cert.pem" ]; then

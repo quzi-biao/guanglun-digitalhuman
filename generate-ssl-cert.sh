@@ -1,36 +1,74 @@
 #!/bin/bash
 
-# 使用 openssl 生成自签名 SSL 证书
+# 使用 mkcert 生成本地可信的 SSL 证书
 
-echo "生成自签名 SSL 证书..."
+echo "检查 mkcert 是否已安装..."
+
+if ! command -v mkcert &> /dev/null
+then
+    echo "mkcert 未安装，正在安装..."
+    
+    # 检测操作系统
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS
+        if command -v brew &> /dev/null; then
+            brew install mkcert
+            brew install nss # 用于 Firefox
+        else
+            echo "错误: 未找到 Homebrew，请先安装 Homebrew"
+            echo "访问: https://brew.sh"
+            exit 1
+        fi
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Linux
+        if command -v apt-get &> /dev/null; then
+            # Debian/Ubuntu
+            sudo apt-get update
+            sudo apt-get install -y libnss3-tools
+            curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
+            chmod +x mkcert-v*-linux-amd64
+            sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+        elif command -v yum &> /dev/null; then
+            # CentOS/RHEL
+            sudo yum install -y nss-tools
+            curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
+            chmod +x mkcert-v*-linux-amd64
+            sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+        else
+            echo "错误: 不支持的 Linux 发行版"
+            exit 1
+        fi
+    else
+        echo "错误: 不支持的操作系统"
+        exit 1
+    fi
+    
+    echo "✓ mkcert 安装完成"
+fi
+
+echo "安装本地 CA..."
+mkcert -install
+
+echo "生成 SSL 证书..."
 mkdir -p ssl
 
 # 获取本机 IP
-LOCAL_IP=$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+LOCAL_IP=$(ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -1 2>/dev/null || echo "")
 
-# 准备 SAN 配置
-SAN="DNS:localhost,IP:127.0.0.1"
+# 构建证书域名/IP 列表
+CERT_HOSTS="localhost 127.0.0.1 ::1"
 if [ ! -z "$LOCAL_IP" ]; then
-    SAN="${SAN},IP:${LOCAL_IP}"
+    CERT_HOSTS="${CERT_HOSTS} ${LOCAL_IP}"
 fi
 if [ ! -z "$SERVER_HOST" ]; then
-    # 判断是 IP 还是域名
-    if [[ $SERVER_HOST =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        SAN="${SAN},IP:${SERVER_HOST}"
-    else
-        SAN="${SAN},DNS:${SERVER_HOST}"
-    fi
+    CERT_HOSTS="${CERT_HOSTS} ${SERVER_HOST}"
 fi
 
-# 生成私钥
-openssl genrsa -out ssl/key.pem 2048
+# 生成证书
+mkcert -key-file ssl/key.pem -cert-file ssl/cert.pem $CERT_HOSTS
 
-# 生成证书签名请求（CSR）和自签名证书
-openssl req -new -x509 -key ssl/key.pem -out ssl/cert.pem -days 365 \
-    -subj "/C=CN/ST=State/L=City/O=Organization/CN=localhost" \
-    -addext "subjectAltName=${SAN}"
-
-echo "✓ 自签名 SSL 证书已生成到 ssl/ 目录"
+echo ""
+echo "✓ 可信 SSL 证书已生成到 ssl/ 目录"
 echo "  - ssl/key.pem (私钥)"
 echo "  - ssl/cert.pem (证书)"
 echo ""
@@ -44,6 +82,8 @@ if [ ! -z "$SERVER_HOST" ]; then
     echo "  - $SERVER_HOST (服务器地址)"
 fi
 echo ""
-echo -e "\033[1;33m注意: 这是自签名证书，浏览器会显示安全警告\033[0m"
-echo "如需避免警告，请使用 mkcert 生成可信证书:"
-echo "  ./generate-trusted-cert.sh"
+echo "✓ 本地浏览器不会显示证书警告"
+echo ""
+echo "手机访问需要安装 mkcert CA 证书:"
+echo "  1. 查看 CA 证书位置: mkcert -CAROOT"
+echo "  2. 将 rootCA.pem 传输到手机并安装"
