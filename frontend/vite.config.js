@@ -8,8 +8,8 @@ export default defineConfig({
     port: 3000,
     host: true,
     https:{
-      key: readFileSync('./ssl/key.pem'),
-      cert: readFileSync('./ssl/cert.pem')
+      key: readFileSync('../ssl/key.pem'),
+      cert: readFileSync('../ssl/cert.pem')
     }
   },
   build: {

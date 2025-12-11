@@ -4,8 +4,8 @@ services:
   # 后端服务（支持 HTTPS）
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: digitalhuman-backend
     restart: unless-stopped
     ports:
@@ -32,8 +32,8 @@ services:
   # 前端服务（支持 HTTPS）
   frontend:
     build:
-      context: .
-      dockerfile: Dockerfile.frontend
+      context: ./frontend
+      dockerfile: Dockerfile
       args:
         - VITE_AI_PROXY_URL=http://localhost:8089/api/chat
         - VITE_TTS_PROXY_URL=http://localhost:8089/api/tts

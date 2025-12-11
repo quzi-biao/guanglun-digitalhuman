@@ -1,98 +1,22 @@
-# 数智人对话 H5 项目
+# 数智人对话系统
 
-基于 Vue3 + Vite 构建的数智人对话系统，支持 AI 对话和语音播报功能。
+基于阿里云 AI 服务的智能对话系统，支持文本对话、语音合成和语音识别。
 
-## 功能特性
+## 项目结构
 
-- ✅ AI 智能对话（基于阿里云通义千问）
-- ✅ Markdown 格式解析和渲染
-- ✅ 阿里云通义千问 TTS 语音播报
-- ✅ 透明玻璃态 UI 设计
-- ✅ 自定义背景图片
-- ⏳ 语音输入（待实现）
-- ⏳ 他们在问（待实现）
-
-## 技术栈
-
-### 前端
-- Vue 3 - 渐进式 JavaScript 框架
-- Vite - 下一代前端构建工具
-- Marked - Markdown 解析器
-- Axios - HTTP 客户端
-
-### 后端
-- Express - Node.js Web 框架
-- CORS - 跨域资源共享
-- Dotenv - 环境变量管理
+```
+digitalhuman/
+├── backend/          # 后端服务（Node.js + Express）
+├── frontend/         # 前端应用（Vue 3 + Vite）
+├── ssl/              # SSL 证书
+├── docker-compose.yml
+├── deploy.sh
+└── README.md
+```
 
 ## 快速开始
 
-### 1. 安装依赖
-
-```bash
-npm install
-```
-
-### 2. 配置环境变量
-
-复制 `.env.example` 为 `.env` 并填入你的 API Keys：
-
-```bash
-cp .env.example .env
-```
-
-编辑 `.env` 文件：
-
-```env
-# 阿里云 DashScope API Key（用于 AI 对话和 TTS 服务）
-# 获取地址: https://help.aliyun.com/zh/model-studio/get-api-key
-VITE_DASHSCOPE_API_KEY=your-dashscope-api-key-here
-
-# 后端服务器端口（可选，默认为 3001，Docker 映射到 8089）
-PORT=3001
-```
-
-**注意**：
-- 开发环境：前端自动连接到 `http://localhost:3001`
-- Docker 环境：前端自动连接到 `http://localhost:8089`
-
-### 3. 启动开发服务器
-
-**方式一：同时启动前后端（推荐）**
-
-```bash
-npm start
-```
-
-这将同时启动：
-- 后端 TTS 代理服务器（端口 3001）
-- 前端开发服务器（端口 5173）
-
-**方式二：分别启动**
-
-终端 1 - 启动后端服务器：
-```bash
-npm run server
-```
-
-终端 2 - 启动前端：
-```bash
-npm run dev
-```
-
-访问 http://localhost:5173
-
-### 4. 构建生产版本
-
-```bash
-npm run build
-```
-
-构建产物将生成在 `dist` 目录。
-
-## Docker 部署（推荐）
-
-### 快速部署
+### 使用 Docker Compose（推荐）
 
 ```bash
 # 1. 配置环境变量
@@ -100,121 +24,56 @@ cp .env.example .env
 # 编辑 .env 填入 API Keys
 
 # 2. 一键部署
-chmod +x deploy.sh
 ./deploy.sh
 ```
 
-### 手动部署
+访问: http://localhost
+
+### 分别开发
+
+#### 后端
 
 ```bash
-# 构建并启动所有服务
-docker-compose up -d
-
-# 查看服务状态
-docker-compose ps
-
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
+cd backend
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-访问：
-- 前端：http://localhost
-- 后端 API：http://localhost:8089
+#### 前端
 
-详细文档请查看 [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
-
-## 传统部署
-
-**生产环境部署：**
-1. 部署后端服务器：`node server.js`
-2. 部署前端静态文件到 CDN 或静态服务器
-3. 配置 `VITE_TTS_PROXY_URL` 指向生产环境的后端地址
-
-## 项目结构
-
-```
-digitalhuman/
-├── src/
-│   ├── assets/              # 静态资源
-│   │   └── WechatIMG377.jpg # 背景图片
-│   ├── services/            # 服务层
-│   │   ├── ai.js           # AI 对话服务
-│   │   └── tts.js          # TTS 语音服务（前端）
-│   ├── App.vue             # 主组件
-│   ├── main.js             # 入口文件
-│   └── style.css           # 全局样式
-├── server.js               # 后端 TTS 代理服务器
-├── index.html              # HTML 模板
-├── vite.config.js          # Vite 配置
-├── nginx.conf              # Nginx 配置
-├── package.json            # 项目配置
-├── Dockerfile.frontend     # 前端 Docker 镜像
-├── Dockerfile.backend      # 后端 Docker 镜像
-├── docker-compose.yml      # Docker Compose 配置
-├── .dockerignore           # Docker 忽略文件
-├── deploy.sh               # 一键部署脚本
-├── .env                    # 环境变量（需自行创建）
-├── .env.example            # 环境变量示例
-├── README.md              # 项目说明
-└── DOCKER_DEPLOYMENT.md   # Docker 部署文档
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-## API 配置
+## 功能特性
 
-### 阿里云通义千问 API
+- ✅ AI 智能对话（阿里云 DashScope）
+- ✅ 语音合成 TTS（阿里云 NLS）
+- ✅ 实时语音识别 ASR（阿里云 NLS）
+- ✅ Markdown 渲染
+- ✅ 语音播放控制
+- ✅ 历史消息管理
+- ✅ HTTPS 支持
+- ✅ Docker 部署
 
-支持多种 AI 模型：
-- `qwen-plus` (默认，推荐)
-- `qwen-turbo` (更快速)
-- `qwen-max` (最强大)
-- `qwen-long` (长文本)
+## 文档
 
-在 `src/services/ai.js` 中可以修改模型配置。
+- [Docker 部署指南](DOCKER_DEPLOYMENT.md)
+- [HTTPS 配置指南](HTTPS_SETUP.md)
+- [NLS 配置指南](NLS_SETUP.md)
+- [后端 README](backend/README.md)
+- [前端 README](frontend/README.md)
 
-模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
+## 环境要求
 
-### 阿里云 TTS API
-
-支持两种模式：
-
-**1. 标准 TTS（HTTP API）**
-- 适合：短文本、离线合成
-- 延迟：较高（需要等待完整音频生成）
-- 使用：`src/services/tts.js`
-
-**2. 实时 TTS（WebSocket API）** ⚡ 新功能
-- 适合：长文本、实时对话
-- 延迟：极低（流式返回音频）
-- 使用：`src/services/realtimeTTS.js`
-- 支持模型：
-  - `qwen3-tts-flash-realtime` - 快速模型（推荐）
-  - `qwen-tts-realtime` - 标准模型
-  - `qwen3-tts-vc-realtime` - 声音复刻模型
-
-支持的语音：
-- xiaogang (默认)
-
-在 `src/services/tts.js` 或 `src/services/realtimeTTS.js` 中可以修改语音配置。
-
-## 使用说明
-
-1. 点击底部"键盘输入"按钮打开输入框
-2. 输入问题后按回车或点击"发送"按钮
-3. AI 会回复你的问题，并自动播报语音
-4. 对话历史会保留在当前会话中
-
-## 注意事项
-
-- 需要稳定的网络连接访问 API
-- TTS 播报需要浏览器支持 Audio API
-- 建议在现代浏览器中使用（Chrome, Safari, Edge 等）
-- **必须同时启动前端和后端服务器才能使用 TTS 功能**
-- 后端服务器用于安全地调用阿里云 TTS API（避免在前端暴露 API Key）
-- 生产环境部署时，需要将后端服务器部署到服务器上，并配置 CORS
-- 小程序环境需要配置合法域名
+- Node.js >= 18
+- Docker & Docker Compose（可选）
+- 阿里云 DashScope API Key
+- 阿里云 NLS Appkey
 
 ## License
 
